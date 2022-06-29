@@ -56,7 +56,7 @@ def pb2_hpspace_and_scheduler():
     from ray import tune
 
     hp_space = {
-        "num_train_epochs": tune.choice([1, 2, 3]),
+        "num_train_epochs": tune.choice([1, 2, 3, 4]),
     }
 
     scheduler = PB2(
