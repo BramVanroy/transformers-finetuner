@@ -70,6 +70,7 @@ def main():
 
     targs.metric_for_best_model = "r2" if datasilo.regression else "f1"
     targs.greater_is_better = True
+    targs.load_best_model_at_end = True
 
     # Select a class to use as trainer. Custom trainer for classification to use class weights
     trainer_class = (partial(WeightedTrainer, class_weights=datasilo.class_weights)
