@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+import torch
 from datasets import DatasetDict, load_dataset
 from sklearn.utils import compute_class_weight
 from torch import FloatTensor
@@ -24,9 +25,9 @@ class DataTrainingArguments:
     )
 
     trainsplit_name: str = field(default="train",
-                                           metadata={"help": "Name of the train split in the dataset."})
+                                 metadata={"help": "Name of the train split in the dataset."})
     validationsplit_name: str = field(default="validation",
-                                                metadata={"help": "Name of the validation split in the dataset."})
+                                      metadata={"help": "Name of the validation split in the dataset."})
     testsplit_name: str = field(default="test", metadata={"help": "Name of the test split in the dataset."})
 
     validation_size: float_or_int_type = field(
@@ -134,19 +135,24 @@ class DataSilo(DataTrainingArguments):
         self.id2label = dict(zip(self.label_ids, self.labels))
         self.num_labels = len(self.labels)
         self.regression = self.num_labels == 1
+        self.class_weights = None
 
-        self.class_weights = FloatTensor(compute_class_weight("balanced",
-                                                              classes=self.label_ids,
-                                                              y=self.datasets["train"][self.labelcolumn].numpy()))
-        logger.info(f"Class weights train set: {self.class_weights.tolist()}")
+        weights = FloatTensor(compute_class_weight("balanced",
+                                                   classes=self.label_ids,
+                                                   y=self.datasets["train"][self.labelcolumn].numpy()))
+
+        # If all weights are the same (all 1.) then we do not need to use weighted crossentropyloss
+        # because the dataset is balanced
+        if not torch.all(weights == 1.).item():
+            self.class_weights = weights
 
         if self.do_plot:  # Plot label distributions
             plot_labels(self.datasets, self.id2label, f"{self.dataset_name} ({len(self.labels)} classes)",
                         self.output_dir)
 
     def _prepare_datasets(self):
-        max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length)\
-                          if self.max_seq_length else self.tokenizer.model_max_length
+        max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
+            if self.max_seq_length else self.tokenizer.model_max_length
 
         def tokenize_function(example):
             return self.tokenizer(example["text"], max_length=max_seq_length, truncation=True)
