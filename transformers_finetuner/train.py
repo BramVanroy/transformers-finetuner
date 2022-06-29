@@ -33,13 +33,11 @@ def main():
     else:
         margs, dargs, targs, oargs = parser.parse_args_into_dataclasses()
 
+    targs.optim = "adamw_torch"  # Explicitly set to torch AdamW rather than HF AdamW
+    targs.ray_scope = "all"  # pick the best checkpoint from all chkpts of trials rather than just the last
 
     output_dir = Path(targs.output_dir)
     output_dir.mkdir(exist_ok=True, parents=True)
-    # Save args to output dir
-    merge_and_save_dataclasses(margs, dargs, targs, oargs, output_file=output_dir.joinpath("args.json"))
-
-    targs.ray_scope = "all"  # pick the best checkpoint from all chkpts of trials rather than just the last
 
     if targs.seed is None:
         targs.seed = randint(0, 1024)
@@ -178,8 +176,9 @@ def main():
 
         preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
 
+    # Save args and env to output dir
     Env.dump(output_dir.joinpath("env.json"))
-
+    merge_and_save_dataclasses(margs, dargs, targs, oargs, output_file=output_dir.joinpath("args.json"))
 
 
 if __name__ == "__main__":
