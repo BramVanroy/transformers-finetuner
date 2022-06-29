@@ -60,10 +60,8 @@ def pb2_hpspace_and_scheduler():
     }
 
     scheduler = PB2(
-        time_attr="training_iteration",
         metric="eval_f1",
         mode="max",
-        perturbation_interval=120,
         hyperparam_bounds={
             "weight_decay": [0.0, 0.3],  # default (in transformers): 0.
             "learning_rate": [1e-4, 1e-5],
