@@ -22,7 +22,7 @@ class Env:
     cuda_device_count: int = cuda.device_count() if cuda.is_available() else 0
     cuda_devices: Optional[str] = None
     cuda_capabilities: Optional[str] = None
-    commit: Optional[str] = None
+    finetuner_commit: Optional[str] = None
 
     def __post_init__(self):
         if self.cuda_device_count:
@@ -31,13 +31,13 @@ class Env:
                                                 for i in range(self.cuda_device_count)])
 
         try:
-            repo = git.Repo(search_parent_directories=True)
-            self.commit = repo.head.object.hexsha
+            repo = git.Repo(path="../")
+            self.finetuner_commit = repo.head.object.hexsha
         except InvalidGitRepositoryError:
-            self.commit = None
+            self.finetuner_commit = None
 
     @classmethod
-    def save(cls, output_file):
+    def dump(cls, output_file):
         env = cls()
         with Path(output_file).open("w", encoding="utf-8") as env_out:
             dump(dataclasses.asdict(env), env_out, indent=4, sort_keys=True)

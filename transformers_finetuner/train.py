@@ -178,7 +178,7 @@ def main():
 
         preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
 
-    Env.save(output_dir.joinpath("env.json"))
+    Env.dump(output_dir.joinpath("env.json"))
 
 
 
