@@ -15,7 +15,7 @@ class WeightedTrainer(Trainer):
         super().__init__(*args, **kwargs)
 
         class_weights = class_weights.to(self.args.device)
-        logger.info(f"Using classification with class weights", class_weights)
+        logger.info(f"Using classification with class weights: {class_weights.tolist()}")
         self.loss_fct = CrossEntropyLoss(weight=class_weights)
 
     def compute_loss(self, model, inputs, return_outputs=False):
