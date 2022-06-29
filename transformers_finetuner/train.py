@@ -110,7 +110,7 @@ def main():
                 "adam_beta1": "beta1",  # default: 0.9
                 "adam_beta2": "beta2"
             },
-            metric_columns=["eval_f1", "eval_loss", "epoch", "training_iteration"],
+            metric_columns=["eval_f1", "eval_loss", "steps"],
         )
 
         scheduler = None
