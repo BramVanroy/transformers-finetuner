@@ -33,7 +33,8 @@ def main():
     else:
         margs, dargs, targs, oargs = parser.parse_args_into_dataclasses()
 
-    targs.optim = "adamw_torch"  # Explicitly set to torch AdamW rather than HF AdamW
+    # Commenting for now: seems to be bugged when reloading checkpoints
+    # targs.optim = "adamw_torch"  # Explicitly set to torch AdamW rather than HF AdamW
     targs.ray_scope = "all"  # pick the best checkpoint from all chkpts of trials rather than just the last
 
     output_dir = Path(targs.output_dir)
