@@ -77,6 +77,9 @@ def main():
 
     # Prepare a computer_metrics based on whether or not we use regression
     _compute_metrics = partial(compute_metrics, regression=datasilo.regression, label_ids=None, predictions=None)
+
+    early_stopper = EarlyStoppingCallback(early_stopping_patience=oargs.early_stopping_patience,
+                                          early_stopping_threshold=oargs.early_stopping_threshold)
     trainer: Trainer = trainer_class(
         model_init=_model_init,
         args=targs,
@@ -84,8 +87,7 @@ def main():
         train_dataset=datasilo.datasets["train"],
         eval_dataset=datasilo.datasets["validation"],
         compute_metrics=_compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=max(1, targs.num_train_epochs // 3),
-                                         early_stopping_threshold=0.0025)]
+        callbacks=[early_stopper] if oargs.do_early_stopping else None
     )
 
     if oargs.do_optimize:

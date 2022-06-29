@@ -7,11 +7,11 @@ from ray.tune.schedulers.pb2 import PB2
 @dataclass
 class OptimizationArguments:
     """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
+    Arguments pertaining to optimization and early stopping.
     """
     do_optimize: bool = field(
         default=False,
-        metadata={"help": "Whether to run hyperparameter optimization"}
+        metadata={"help": "Whether to run hyperparameter optimization."}
     )
     n_trials: int = field(
         default=8,
@@ -21,6 +21,20 @@ class OptimizationArguments:
         default=None,
         metadata={"help": "Whether to use a scheduler, currently only supporting 'pb2'."}
     )
+    do_early_stopping: bool = field(
+        default=False,
+        metadata={"help": "Whether to use early stopping."}
+    )
+    early_stopping_patience: int = field(
+        default=1,
+        metadata={"help": "If the evaluation `best metric` does not improve for this number of evaluation calls,"
+                          "then stop training."}
+    )
+    early_stopping_threshold: float = field(
+        default=0.0,
+        metadata={"help": "The value that the model needs to improve to satisfy early stopping conditions."}
+    )
+
 
 
 def default_hp_space():
