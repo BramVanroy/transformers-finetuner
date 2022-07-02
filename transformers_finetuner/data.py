@@ -129,6 +129,9 @@ class DataSilo(DataTrainingArguments):
         self._prepare_datasets()
         self.check_for_overlap_splits()
 
+        self.max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
+            if self.max_seq_length else self.tokenizer.model_max_length
+
         self.labels = self.datasets["train"].features[self.labelcolumn].names
         self.label_ids = sorted(self.datasets["train"].unique(self.labelcolumn))
         self.label2id = dict(zip(self.labels, self.label_ids))
@@ -151,13 +154,10 @@ class DataSilo(DataTrainingArguments):
                         self.output_dir)
 
     def _prepare_datasets(self):
-        max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
-            if self.max_seq_length else self.tokenizer.model_max_length
-
-        def tokenize_function(example):
-            return self.tokenizer(example["text"], max_length=max_seq_length, truncation=True)
-
-        self.datasets = self.datasets.map(tokenize_function, batched=True,
+        self.datasets = self.datasets.map(lambda examples: self.tokenizer(examples["text"],
+                                                                          max_length=self.max_seq_length,
+                                                                          truncation=True),
+                                          batched=True,
                                           desc="Tokenizing datasets",
                                           load_from_cache_file=not self.overwrite_cache)
 
