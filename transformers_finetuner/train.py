@@ -133,6 +133,9 @@ def main():
                                                     local_dir=output_dir.joinpath("ray_results"),
                                                     log_to_file=True)
 
+        print(best_params.run_id)
+        exit()
+
         if not oargs.scheduler_type:
             # Set the trainer to the best hyperparameters found
             for hparam, v in best_params.hyperparameters.items():
