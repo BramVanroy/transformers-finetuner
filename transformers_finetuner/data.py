@@ -153,24 +153,14 @@ class DataSilo(DataTrainingArguments):
 
         self.num_labels = len(self.datasets["train"].unique(self.labelcolumn))
 
-        # Set the correct features for the label column
-        if not self.dataset_name:
-            self.datasets = self.datasets.cast_column(self.labelcolumn,
-                                                      ClassLabel(names=self.labelnames if self.labelnames else None,
-                                                                 num_classes=self.num_labels))
+        self.max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
+            if self.max_seq_length else self.tokenizer.model_max_length
 
         self._prepare_datasets()
         self.check_for_overlap_splits()
 
-        self.max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
-            if self.max_seq_length else self.tokenizer.model_max_length
-
-        print(self.datasets["train"].features[self.labelcolumn])
-        print(self.datasets["train"].features)
-        print(self.datasets["train"])
-
-        self.labels = self.datasets["train"].features[self.labelcolumn].names
-        self.label_ids = sorted(self.datasets["train"].unique(self.labelcolumn))
+        self.labels = self.datasets["train"].features["label"].names
+        self.label_ids = sorted(self.datasets["train"].unique("label"))
         self.label2id = dict(zip(self.labels, self.label_ids))
         self.id2label = dict(zip(self.label_ids, self.labels))
         self.regression = self.num_labels == 1
@@ -178,7 +168,7 @@ class DataSilo(DataTrainingArguments):
 
         weights = FloatTensor(compute_class_weight("balanced",
                                                    classes=self.label_ids,
-                                                   y=self.datasets["train"][self.labelcolumn]))
+                                                   y=self.datasets["train"]["label"].numpy()))
 
         # If all weights are the same (all 1.) then we do not need to use weighted crossentropyloss
         # because the dataset is balanced
@@ -202,8 +192,16 @@ class DataSilo(DataTrainingArguments):
                                           load_from_cache_file=not self.overwrite_cache)
 
         # Not all models/tokenizers have the same columns
-        cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label", "labels"]
+        cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"]
                 if c in self.datasets["train"].column_names]
+
+        # Only keep relevant columns. Include text, which might be useful for prediction output investigation
+        keepcols = {self.textcolumn, "input_ids", "token_type_ids", "attention_mask", "label"}
+        self.datasets = self.datasets.remove_columns(
+            [c for c in self.datasets["train"].column_names if c not in keepcols])
+        self.datasets = self.datasets.cast_column("label",
+                                                  ClassLabel(names=self.labelnames if self.labelnames else None,
+                                                             num_classes=self.num_labels))
         self.datasets.set_format(type="torch", columns=cols)
 
     def check_for_overlap_splits(self):
