@@ -59,8 +59,10 @@ def main():
                                     targs.do_train, targs.overwrite_output_dir)
 
     # Init datasets into a datasilo
+    distrib = int(os.environ["WORLD_SIZE"]) > 1 if "WORLD_SIZE" in os.environ else False
     tokenizer = AutoTokenizer.from_pretrained(margs.model_name_or_path)
-    datasilo = DataSilo(**asdict(dargs), tokenizer=tokenizer, output_dir=output_dir, do_plot=False)
+    datasilo = DataSilo(**asdict(dargs), tokenizer=tokenizer, output_dir=output_dir, do_plot=False,
+                        is_distributed=distrib, is_world_process_zero=targs.process_index)
 
     # Tie our current parameters to model_init, so that it can be invoked at each hparam search
     if datasilo.regression:
@@ -138,8 +140,9 @@ def main():
             for hparam, v in best_params.hyperparameters.items():
                 setattr(trainer.args, hparam, v)
 
-            with output_dir.joinpath("opt_hparams.json").open("w", encoding="utf-8") as hp_out:
-                dump(best_params, hp_out, indent=4, sort_keys=True)
+            if trainer.is_world_process_zero():
+                with output_dir.joinpath("opt_hparams.json").open("w", encoding="utf-8") as hp_out:
+                    dump(best_params, hp_out, indent=4, sort_keys=True)
 
     if targs.do_train:
         checkpoint = None
@@ -149,11 +152,12 @@ def main():
             checkpoint = last_checkpoint
 
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        metrics = train_result.metrics
-        trainer.save_model()
-        trainer.log_metrics("train", metrics)
-        trainer.save_metrics("train", metrics)
-        trainer.save_state()
+        if trainer.is_world_process_zero():
+            metrics = train_result.metrics
+            trainer.save_model()
+            trainer.log_metrics("train", metrics)
+            trainer.save_metrics("train", metrics)
+            trainer.save_state()
 
     if targs.do_predict and datasilo.datasets["test"] is not None and trainer.is_world_process_zero():
         logger.info("*** Predict/test ***")
@@ -180,9 +184,10 @@ def main():
 
         preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
 
-    # Save args and env to output dir
-    Env.dump(output_dir.joinpath("env.json"))
-    merge_and_save_dataclasses(margs, dargs, targs, oargs, output_file=output_dir.joinpath("args.json"))
+    if trainer.is_world_process_zero():
+        # Save args and env to output dir
+        Env.dump(output_dir.joinpath("env.json"))
+        merge_and_save_dataclasses(margs, dargs, targs, oargs, output_file=output_dir.joinpath("args.json"))
 
 
 if __name__ == "__main__":

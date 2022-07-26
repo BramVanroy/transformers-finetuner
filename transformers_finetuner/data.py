@@ -104,6 +104,8 @@ class DataSilo(DataTrainingArguments):
     tokenizer: Optional[PreTrainedTokenizer] = None
     do_plot: bool = False
     output_dir: Path = None
+    is_world_process_zero: bool = False
+    is_distributed: bool = False
     datasets: DatasetDict = field(default=None, init=False)
     regression: bool = field(default=None, init=False)
 
@@ -112,6 +114,9 @@ class DataSilo(DataTrainingArguments):
             raise ValueError("A tokenizer must be given to initialize a DataSilo")
 
         if self.dataset_name:
+            if self.is_distributed and not self.is_world_process_zero:
+                torch.distributed.barrier()
+
             self.train_dataset, self.test_dataset = load_dataset(self.dataset_name,
                                                                  split=[self.trainsplit_name, self.testsplit_name])
 
@@ -157,7 +162,8 @@ class DataSilo(DataTrainingArguments):
             if self.max_seq_length else self.tokenizer.model_max_length
 
         self._prepare_datasets()
-        self.check_for_overlap_splits()
+        if self.is_world_process_zero:
+            self.check_for_overlap_splits()
 
         self.labels = self.datasets["train"].features["label"].names
         self.label_ids = sorted(self.datasets["train"].unique("label"))
@@ -176,8 +182,12 @@ class DataSilo(DataTrainingArguments):
             self.class_weights = weights
 
         if self.do_plot:  # Plot label distributions
-            plot_labels(self.datasets, self.id2label, f"{self.dataset_name} ({len(self.labels)} classes)",
-                        self.output_dir)
+            if self.is_world_process_zero:
+                plot_labels(self.datasets, self.id2label, f"{self.dataset_name} ({len(self.labels)} classes)",
+                            self.output_dir)
+
+        if self.is_distributed and self.is_world_process_zero:
+            torch.distributed.barrier()
 
     def _prepare_datasets(self):
         self.datasets = self.datasets.map(lambda examples: self.tokenizer(examples[self.textcolumn],
