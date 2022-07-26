@@ -162,8 +162,8 @@ def main():
     if targs.do_predict and datasilo.datasets["test"] is not None and trainer.is_world_process_zero():
         logger.info("*** Predict/test ***")
 
-        gold_labels = datasilo.datasets["test"][datasilo.labelcolumn].numpy()
-        predict_dataset = datasilo.datasets["test"].remove_columns(datasilo.labelcolumn)
+        gold_labels = datasilo.datasets["test"]["label"].numpy()
+        predict_dataset = datasilo.datasets["test"].remove_columns("label")
         predictions = trainer.predict(predict_dataset, metric_key_prefix="predict").predictions
         predictions = predictions.squeeze() if datasilo.regression else np.argmax(predictions, axis=1)
 
