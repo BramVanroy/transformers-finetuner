@@ -162,30 +162,32 @@ def main():
             trainer.save_metrics("train", metrics)
             trainer.save_state()
 
-    if targs.do_predict and datasilo.datasets["test"] is not None and trainer.is_world_process_zero():
+    if targs.do_predict and datasilo.datasets["test"] is not None:
         logger.info("*** Predict/test ***")
 
         gold_labels = datasilo.datasets["test"]["label"].numpy()
         predict_dataset = datasilo.datasets["test"].remove_columns("label")
         predictions = trainer.predict(predict_dataset, metric_key_prefix="predict").predictions
-        predictions = predictions.squeeze() if datasilo.regression else np.argmax(predictions, axis=1)
 
-        preds_df = datasilo.datasets["test"].to_pandas()
-        preds_df["preds"] = predictions
+        if trainer.is_world_process_zero():
+            predictions = predictions.squeeze() if datasilo.regression else np.argmax(predictions, axis=1)
 
-        if not datasilo.regression:
-            preds_df["pred_labels"] = [datasilo.id2label[pred] for pred in predictions]
+            preds_df = datasilo.datasets["test"].to_pandas()
+            preds_df["preds"] = predictions
 
-        results = compute_metrics(label_ids=gold_labels, predictions=predictions, regression=datasilo.regression)
-        if datasilo.regression:
-            results = {**compute_metrics(label_ids=gold_labels, predictions=predictions, regression=False),
-                       **results}
+            if not datasilo.regression:
+                preds_df["pred_labels"] = [datasilo.id2label[pred] for pred in predictions]
 
-        plot_confusion_matrix(predictions, gold_labels, datasilo.labels, output_dir)
-        trainer.log_metrics("test", results)
-        trainer.save_metrics("test", results)
+            results = compute_metrics(label_ids=gold_labels, predictions=predictions, regression=datasilo.regression)
+            if datasilo.regression:
+                results = {**compute_metrics(label_ids=gold_labels, predictions=predictions, regression=False),
+                           **results}
 
-        preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
+            plot_confusion_matrix(predictions, gold_labels, datasilo.labels, output_dir)
+            trainer.log_metrics("test", results)
+            trainer.save_metrics("test", results)
+
+            preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
 
     if trainer.is_world_process_zero():
         # Save args and env to output dir
