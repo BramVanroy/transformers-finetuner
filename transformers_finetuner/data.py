@@ -122,7 +122,6 @@ class DataSilo(DataTrainingArguments):
             self.train_dataset, self.test_dataset = load_dataset(self.dataset_name,
                                                                  split=[self.trainsplit_name, self.testsplit_name])
 
-            print("AFTER LOAD DATASETS")
             self.fingerprint_base += f"{self.dataset_name.replace('/', '-')}+{str(self.train_dataset.version).replace('.', '-')}+"
             try:
                 self.validation_dataset = load_dataset(self.dataset_name, split=self.validationsplit_name)
@@ -134,7 +133,6 @@ class DataSilo(DataTrainingArguments):
                     load_from_cache_file=not self.overwrite_cache,
                     train_new_fingerprint=f"{self.fingerprint_base}=splits+train+",
                     test_new_fingerprint=f"{self.fingerprint_base}=splits+test+")
-                print("AFTER SPLITS")
                 self.train_dataset = splits["train"]
                 self.validation_dataset = splits["test"]
         else:
@@ -168,8 +166,6 @@ class DataSilo(DataTrainingArguments):
             "validation": self.validation_dataset,
             "test": self.test_dataset
         })
-
-        print("AFTER DATASETDICT")
 
         self.num_labels = len(self.datasets["train"].unique(self.labelcolumn))
 
@@ -219,14 +215,12 @@ class DataSilo(DataTrainingArguments):
                 new_fingerprint=f"{self.fingerprint_base}=tokenization-{split_name}",
                 load_from_cache_file=not self.overwrite_cache)
 
-            print("AFTER TOKENIZING", split_name)
             self.datasets[split_name] = self.datasets[split_name].rename_column(self.labelcolumn, "label",
                                                                                 new_fingerprint=f"{self.fingerprint_base}=relabeling-{split_name}")
-            print("AFTER renaming", split_name)
+
             self.datasets[split_name] = self.datasets[split_name].remove_columns(
                 [c for c in self.datasets[split_name].column_names if c not in keepcols],
                 new_fingerprint=f"{self.fingerprint_base}=removecols")
-            print("AFTER removing", split_name)
 
         # Not all models/tokenizers have the same columns
         cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"] if
