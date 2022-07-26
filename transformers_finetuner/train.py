@@ -42,9 +42,12 @@ def main():
 
     if targs.seed is None:
         targs.seed = randint(0, 1024)
+        logger.warning(f"No 'seed' was set. New random seed {dargs.split_seed} chosen.")
 
     if dargs.split_seed is None:
         dargs.split_seed = randint(0, 1024)
+        logger.warning(f"No 'split_seed' was set for dataset splitting, so IF automatic splitting needs to occur, we"
+                       f" will likely not be able to use a cached dataset . New random seed {dargs.split_seed} chosen.")
 
     change_logger_level(targs.get_process_log_level())
 

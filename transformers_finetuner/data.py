@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from os.path import getmtime
 from pathlib import Path
 from typing import List, Optional
 
@@ -113,6 +114,7 @@ class DataSilo(DataTrainingArguments):
         if not self.tokenizer:
             raise ValueError("A tokenizer must be given to initialize a DataSilo")
 
+        self.fingerprint_base = f"{self.validation_size}+{self.split_seed}+{self.labelcolumn}+"
         if self.dataset_name:
             if self.is_distributed and not self.is_world_process_zero:
                 torch.distributed.barrier()
@@ -120,6 +122,8 @@ class DataSilo(DataTrainingArguments):
             self.train_dataset, self.test_dataset = load_dataset(self.dataset_name,
                                                                  split=[self.trainsplit_name, self.testsplit_name])
 
+            print("AFTER LOAD DATASETS")
+            self.fingerprint_base += f"{self.dataset_name.replace('/', '-')}+{str(self.train_dataset.version).replace('.', '-')}+"
             try:
                 self.validation_dataset = load_dataset(self.dataset_name, split=self.validationsplit_name)
             except ValueError:
@@ -127,8 +131,10 @@ class DataSilo(DataTrainingArguments):
                     test_size=self.validation_size,
                     seed=self.split_seed,
                     stratify_by_column=self.labelcolumn,
-                    load_from_cache_file=not self.overwrite_cache)
-
+                    load_from_cache_file=not self.overwrite_cache,
+                    train_new_fingerprint=f"{self.fingerprint_base}=splits+train+",
+                    test_new_fingerprint=f"{self.fingerprint_base}=splits+test+")
+                print("AFTER SPLITS")
                 self.train_dataset = splits["train"]
                 self.validation_dataset = splits["test"]
         else:
@@ -138,17 +144,24 @@ class DataSilo(DataTrainingArguments):
             self.test_dataset = make_ds(self.testsplit_name)
             self.validation_dataset = make_ds(self.validationsplit_name)
 
+            self.fingerprint_base += f"{self.trainsplit_name}-{getmtime(self.trainsplit_name)}+" \
+                                     f"{self.testsplit_name}-{getmtime(self.testsplit_name)}+" \
+                                     f"{self.validationsplit_name}-{getmtime(self.validationsplit_name)}+"
+
         if self.max_train_samples is not None:
             max_train_samples = min(len(self.train_dataset), self.max_train_samples)
             self.train_dataset = self.train_dataset.select(range(max_train_samples))
+            self.fingerprint_base += f"{max_train_samples}+"
 
         if self.max_validation_samples is not None:
             max_validation_samples = min(len(self.validation_dataset), self.max_validation_samples)
             self.validation_dataset = self.validation_dataset.select(range(max_validation_samples))
+            self.fingerprint_base += f"{max_validation_samples}+"
 
         if self.max_test_samples is not None:
             max_test_samples = min(len(self.test_dataset), self.max_test_samples)
             self.test_dataset = self.test_dataset.select(range(max_test_samples))
+            self.fingerprint_base += f"{max_test_samples}+"
 
         self.datasets = DatasetDict({
             "train": self.train_dataset,
@@ -156,11 +169,14 @@ class DataSilo(DataTrainingArguments):
             "test": self.test_dataset
         })
 
+        print("AFTER DATASETDICT")
+
         self.num_labels = len(self.datasets["train"].unique(self.labelcolumn))
 
         self.max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
             if self.max_seq_length else self.tokenizer.model_max_length
 
+        self.fingerprint_base += f"{self.tokenizer.name_or_path.replace('/', '-')}+{self.max_seq_length}+{self.textcolumn}+"
         self._prepare_datasets()
         if self.is_world_process_zero:
             self.check_for_overlap_splits()
@@ -190,28 +206,31 @@ class DataSilo(DataTrainingArguments):
             torch.distributed.barrier()
 
     def _prepare_datasets(self):
-        self.datasets = self.datasets.map(lambda examples: self.tokenizer(examples[self.textcolumn],
-                                                                          max_length=self.max_seq_length,
-                                                                          truncation=True),
-                                          batched=True,
-                                          desc="Tokenizing datasets",
-                                          load_from_cache_file=not self.overwrite_cache)
-
-        self.datasets = self.datasets.map(lambda examples: {"label": examples[self.labelcolumn]},
-                                          batched=True,
-                                          load_from_cache_file=not self.overwrite_cache)
-
-        # Not all models/tokenizers have the same columns
-        cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"]
-                if c in self.datasets["train"].column_names]
-
         # Only keep relevant columns. Include text, which might be useful for prediction output investigation
         keepcols = {self.textcolumn, "input_ids", "token_type_ids", "attention_mask", "label"}
-        self.datasets = self.datasets.remove_columns(
-            [c for c in self.datasets["train"].column_names if c not in keepcols])
-        self.datasets = self.datasets.cast_column("label",
-                                                  ClassLabel(names=self.labelnames if self.labelnames else None,
-                                                             num_classes=self.num_labels))
+        # looping over splits because we cannot use new_fingerprint on DatasetDict
+        for split_name in self.datasets.keys():
+            self.datasets[split_name] = self.datasets[split_name].map(
+                lambda examples: self.tokenizer(examples[self.textcolumn],
+                                                max_length=self.max_seq_length,
+                                                truncation=True),
+                batched=True,
+                desc="Tokenizing datasets",
+                new_fingerprint=f"{self.fingerprint_base}=tokenization-{split_name}",
+                load_from_cache_file=not self.overwrite_cache)
+
+            print("AFTER TOKENIZING", split_name)
+            self.datasets[split_name] = self.datasets[split_name].rename_column(self.labelcolumn, "label",
+                                                                                new_fingerprint=f"{self.fingerprint_base}=relabeling-{split_name}")
+            print("AFTER renaming", split_name)
+            self.datasets[split_name] = self.datasets[split_name].remove_columns(
+                [c for c in self.datasets[split_name].column_names if c not in keepcols],
+                new_fingerprint=f"{self.fingerprint_base}=removecols")
+            print("AFTER removing", split_name)
+
+        # Not all models/tokenizers have the same columns
+        cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"] if
+                c in self.datasets["train"].column_names]
         self.datasets.set_format(type="torch", columns=cols)
 
     def check_for_overlap_splits(self):
