@@ -15,13 +15,13 @@ from transformers import (AutoTokenizer,
                           TrainingArguments,
                           )
 
-from data import DataSilo, DataTrainingArguments
-from env import Env
-from model import ModelArguments, model_init
-from opt import OptimizationArguments, default_hp_space, pb2_hpspace_and_scheduler
-from plot import plot_confusion_matrix
-from trainer import WeightedTrainer, compute_metrics, compute_objective
-from utils import change_logger_level, get_last_ckpt, logger, merge_and_save_dataclasses
+from .data import DataSilo, DataTrainingArguments
+from .env import Env
+from .model import ModelArguments, model_init
+from .opt import OptimizationArguments, default_hp_space, pb2_hpspace_and_scheduler
+from .plot import plot_confusion_matrix
+from .trainer import WeightedTrainer, compute_metrics, compute_objective
+from .utils import change_logger_level, get_last_ckpt, logger, merge_and_save_dataclasses
 
 
 def main():

@@ -17,6 +17,7 @@ data_labelled2.csv
 prototype.ipynb
 sample.csv
 testing.ipynb
+*.egg-info
 
 .idea
 __pycache__

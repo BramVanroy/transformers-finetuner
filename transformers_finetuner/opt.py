@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ray.tune.schedulers.pb2 import PB2
-
 
 @dataclass
 class OptimizationArguments:
@@ -36,7 +34,6 @@ class OptimizationArguments:
     )
 
 
-
 def default_hp_space():
     from ray import tune
 
@@ -53,6 +50,7 @@ def default_hp_space():
 
 
 def pb2_hpspace_and_scheduler():
+    from ray.tune.schedulers.pb2 import PB2
     from ray import tune
 
     hp_space = {

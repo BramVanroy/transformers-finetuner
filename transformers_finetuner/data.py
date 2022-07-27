@@ -5,13 +5,13 @@ from typing import List, Optional
 
 import pandas as pd
 import torch
-from datasets import ClassLabel, Dataset, DatasetDict, Features, Value, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from sklearn.utils import compute_class_weight
 from torch import FloatTensor
 from transformers import PreTrainedTokenizer
 
-from plot import plot_labels
-from utils import float_or_int_type, logger
+from .plot import plot_labels
+from .utils import float_or_int_type, logger
 
 
 @dataclass

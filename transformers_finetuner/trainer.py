@@ -7,7 +7,7 @@ from torch import FloatTensor
 from torch.nn import CrossEntropyLoss
 from transformers import Trainer
 
-from utils import logger
+from .utils import logger
 
 
 class WeightedTrainer(Trainer):
