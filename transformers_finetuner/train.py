@@ -187,6 +187,7 @@ def main():
             trainer.log_metrics("test", results)
             trainer.save_metrics("test", results)
 
+            preds_df = preds_df.drop(columns=["input_ids", "token_type_ids", "attention_mask"], errors="ignore")
             preds_df.to_csv(output_dir.joinpath(f"predictions_test.txt"), index=False, sep="\t")
 
     if trainer.is_world_process_zero():
