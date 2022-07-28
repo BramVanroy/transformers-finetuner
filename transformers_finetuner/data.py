@@ -11,7 +11,7 @@ from torch import FloatTensor
 from transformers import PreTrainedTokenizer
 
 from .plot import plot_labels
-from .utils import float_or_int_type, logger
+from .utils import create_hash_from_str, float_or_int_type, logger
 
 
 @dataclass
@@ -131,8 +131,8 @@ class DataSilo(DataTrainingArguments):
                     seed=self.split_seed,
                     stratify_by_column=self.labelcolumn,
                     load_from_cache_file=not self.overwrite_cache,
-                    train_new_fingerprint=f"{self.fingerprint_base}=splits+train+",
-                    test_new_fingerprint=f"{self.fingerprint_base}=splits+test+")
+                    train_new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=splits+train"),
+                    test_new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=splits+test"))
                 self.train_dataset = splits["train"]
                 self.validation_dataset = splits["test"]
         else:
@@ -212,7 +212,7 @@ class DataSilo(DataTrainingArguments):
                                                 truncation=True),
                 batched=True,
                 desc="Tokenizing datasets",
-                new_fingerprint=f"{self.fingerprint_base}=tokenization-{split_name}",
+                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=tokenization-{split_name}"),
                 load_from_cache_file=not self.overwrite_cache)
 
             self.datasets[split_name] = self.datasets[split_name].rename_column(self.labelcolumn, "label",
@@ -220,7 +220,7 @@ class DataSilo(DataTrainingArguments):
 
             self.datasets[split_name] = self.datasets[split_name].remove_columns(
                 [c for c in self.datasets[split_name].column_names if c not in keepcols],
-                new_fingerprint=f"{self.fingerprint_base}=removecols")
+                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=removecols"))
 
         # Not all models/tokenizers have the same columns
         cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"] if

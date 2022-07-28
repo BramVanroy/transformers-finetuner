@@ -6,6 +6,7 @@ from json import dump
 from os import PathLike, listdir
 from pathlib import Path
 from typing import Union, Dict
+import hashlib
 
 import datasets
 import transformers
@@ -84,3 +85,8 @@ def merge_and_save_dataclasses(*dcs, output_file: Union[str, PathLike]) -> Dict:
         dump(args, args_out, indent=4, sort_keys=True)
 
     return args
+
+
+def create_hash_from_str(text: str, length: int = 64) -> str:
+    # Using a length of 64 as that is the max char length that datasets accepts
+    return str(int(hashlib.sha256(text.encode("utf-8")).hexdigest(), 16) % 10**length)
