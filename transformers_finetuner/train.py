@@ -66,6 +66,8 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(margs.model_name_or_path)
     datasilo = DataSilo(**asdict(dargs), tokenizer=tokenizer, output_dir=output_dir, do_plot=False,
                         is_distributed=distrib, is_world_process_zero=targs.process_index)
+    dargs.dataset_revision = datasilo.dataset_revision
+    dargs.dataset_config = datasilo.dataset_config
 
     # Tie our current parameters to model_init, so that it can be invoked at each hparam search
     if datasilo.regression:

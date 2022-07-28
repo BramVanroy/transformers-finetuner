@@ -16,10 +16,15 @@ from transformers_finetuner.utils import create_hash_from_str, float_or_int_type
 
 @dataclass
 class DataTrainingArguments:
-    dataset_name: Optional[str] = field(
+    dataset_name: str = field(
+        default=None,
         metadata={"help": "A dataset name that is available on the hub (https://huggingface.co/datasets). Preferably"
                           " with train, valid, test split. If a validation split does not exist, it will be created"
                           " automatically from the train file (stratified)."}
+    )
+    dataset_config: str = field(
+        default=None,
+        metadata={"help": "The specific dataset version to use (can be a branch name, tag name or commit id)."},
     )
     dataset_revision: str = field(
         default="main",
@@ -120,9 +125,16 @@ class DataSilo(DataTrainingArguments):
                 torch.distributed.barrier()
 
             self.train_dataset, self.test_dataset = load_dataset(self.dataset_name,
+                                                                 self.dataset_config,
+                                                                 revision=self.dataset_revision,
                                                                  split=[self.trainsplit_name, self.testsplit_name])
 
-            self.fingerprint_base += f"{self.dataset_name.replace('/', '-')}+{str(self.train_dataset.version).replace('.', '-')}+"
+            self.dataset_revision = self.train_dataset.info.version.version_str
+            self.dataset_config = self.train_dataset.info.config_name
+
+            self.fingerprint_base += f"{self.dataset_name.replace('/', '-')}+" \
+                                     f"{self.dataset_config}+" \
+                                     f"{self.dataset_revision.replace('.', '-')}+"
             try:
                 self.validation_dataset = load_dataset(self.dataset_name, split=self.validationsplit_name)
             except ValueError:
