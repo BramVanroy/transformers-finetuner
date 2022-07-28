@@ -216,11 +216,11 @@ class DataSilo(DataTrainingArguments):
                 load_from_cache_file=not self.overwrite_cache)
 
             self.datasets[split_name] = self.datasets[split_name].rename_column(self.labelcolumn, "label",
-                                                                                new_fingerprint=f"{self.fingerprint_base}=relabeling-{split_name}")
+                                                                                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=relabeling-{split_name}"))
 
             self.datasets[split_name] = self.datasets[split_name].remove_columns(
                 [c for c in self.datasets[split_name].column_names if c not in keepcols],
-                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=removecols"))
+                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=removecols-{split_name}"))
 
         # Not all models/tokenizers have the same columns
         cols = [c for c in ["input_ids", "token_type_ids", "attention_mask", "label"] if
