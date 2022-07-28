@@ -76,7 +76,7 @@ def main():
         _model_init = partial(model_init, margs.model_name_or_path, datasilo.num_labels, datasilo.label2id,
                               datasilo.id2label, margs.model_revision)
 
-    targs.metric_for_best_model = "r2" if datasilo.regression else "f1"
+    targs.metric_for_best_model = "r2" if datasilo.regression else ("qwk" if oargs.calculate_qwk else "f1")
     targs.greater_is_better = True
     targs.load_best_model_at_end = True
 
