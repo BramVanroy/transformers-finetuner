@@ -10,8 +10,8 @@ from sklearn.utils import compute_class_weight
 from torch import FloatTensor
 from transformers import PreTrainedTokenizer
 
-from .plot import plot_labels
-from .utils import create_hash_from_str, float_or_int_type, logger
+from transformers_finetuner.plot import plot_labels
+from transformers_finetuner.utils import create_hash_from_str, float_or_int_type, logger
 
 
 @dataclass
