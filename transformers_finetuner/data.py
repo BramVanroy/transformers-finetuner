@@ -148,18 +148,22 @@ class DataSilo(DataTrainingArguments):
 
         if self.max_train_samples is not None:
             max_train_samples = min(len(self.train_dataset), self.max_train_samples)
-            self.train_dataset = self.train_dataset.select(range(max_train_samples))
             self.fingerprint_base += f"{max_train_samples}+"
+            self.train_dataset = self.train_dataset.select(range(max_train_samples),
+                                                           new_fingerprint=create_hash_from_str(self.fingerprint_base))
 
         if self.max_validation_samples is not None:
             max_validation_samples = min(len(self.validation_dataset), self.max_validation_samples)
-            self.validation_dataset = self.validation_dataset.select(range(max_validation_samples))
             self.fingerprint_base += f"{max_validation_samples}+"
+            self.validation_dataset = self.validation_dataset.select(range(max_validation_samples),
+                                                                     new_fingerprint=create_hash_from_str(
+                                                                         self.fingerprint_base))
 
         if self.max_test_samples is not None:
             max_test_samples = min(len(self.test_dataset), self.max_test_samples)
-            self.test_dataset = self.test_dataset.select(range(max_test_samples))
             self.fingerprint_base += f"{max_test_samples}+"
+            self.test_dataset = self.test_dataset.select(range(max_test_samples),
+                                                         new_fingerprint=create_hash_from_str(self.fingerprint_base))
 
         self.datasets = DatasetDict({
             "train": self.train_dataset,
@@ -216,7 +220,8 @@ class DataSilo(DataTrainingArguments):
                 load_from_cache_file=not self.overwrite_cache)
 
             self.datasets[split_name] = self.datasets[split_name].rename_column(self.labelcolumn, "label",
-                                                                                new_fingerprint=create_hash_from_str(f"{self.fingerprint_base}=relabeling-{split_name}"))
+                                                                                new_fingerprint=create_hash_from_str(
+                                                                                    f"{self.fingerprint_base}=relabeling-{split_name}"))
 
             self.datasets[split_name] = self.datasets[split_name].remove_columns(
                 [c for c in self.datasets[split_name].column_names if c not in keepcols],
