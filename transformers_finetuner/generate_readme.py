@@ -74,7 +74,7 @@ def generate_readme(din: Union[str, PathLike], modelcard_base: Union[str, PathLi
         modelcard["datasets"] = [args["dataset_name"]]
         modelcard["metrics"] = list(test_results.keys())
         model_index = {
-            "name": pdin.name,
+            "name": f"{args['model_name_or_path'].split('/')[-1]}-{args['dataset_name'].split('/')[-1]}",
             "results": [{
                 "dataset": {
                     "type": args["dataset_name"],
@@ -94,16 +94,20 @@ def generate_readme(din: Union[str, PathLike], modelcard_base: Union[str, PathLi
 
         fhout.write(f"---\n{yaml.dump(modelcard)}---\n\n")
 
-        fhout.write(f"# {pdin.name}\n\n")
+        fhout.write(f"# {args['model_name_or_path'].split('/')[-1]}-{args['dataset_name'].split('/')[-1]}\n\n")
         for title, keys in STRUCTURE.items():
             temp_d = {k: v for k, v in args.items() if k in keys}
             temp_d = {k: v for k, v in sorted(temp_d.items(), key=lambda k: keys.index(k[0]))}
             fhout.write(f"# {title}\n{format_dict(temp_d)}\n\n")
 
         fhout.write(f"# Test results of best checkpoint\n{format_dict(test_results)}\n\n")
+        fhout.write(f"## Confusion matric\n\n")
+        fhout.write("![cfm](fig/test_confusion_matrix.png)\n\n")
+        fhout.write(f"## Normalized confusion matrix\n\n")
+        fhout.write("![norm cfm](fig/test_confusion_matrix_norm.png)\n\n")
         fhout.write(f"# Environment\n{format_dict(env)}\n\n")
 
-    print("Done! You probably want to update the README, though. Particularly the first title (#) and in the YAML field probably also the model-index > name")
+    print("Done! Verify the README before uploading!!!")
 
 
 def main():
