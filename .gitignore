@@ -3,7 +3,7 @@
 
 Pipfile*
 transformers
-args.json
+args*.json
 
 data/
 checkpoint/
