@@ -83,7 +83,8 @@ def main():
                      if datasilo.class_weights is not None and not datasilo.regression and margs.use_class_weights else Trainer)
 
     # Prepare a computer_metrics based on whether or not we use regression
-    _compute_metrics = partial(compute_metrics, regression=datasilo.regression, label_ids=None, predictions=None)
+    _compute_metrics = partial(compute_metrics, regression=datasilo.regression, label_ids=None, predictions=None,
+                               calculate_qwk=oargs.calculate_qwk)
 
     early_stopper = EarlyStoppingCallback(early_stopping_patience=oargs.early_stopping_patience,
                                           early_stopping_threshold=oargs.early_stopping_threshold)
@@ -178,8 +179,9 @@ def main():
             if not datasilo.regression:
                 preds_df["pred_labels"] = [datasilo.id2label[pred] for pred in predictions]
 
-            results = compute_metrics(label_ids=gold_labels, predictions=predictions, regression=datasilo.regression)
-            if datasilo.regression:
+            results = compute_metrics(label_ids=gold_labels, predictions=predictions, regression=datasilo.regression,
+                                      calculate_qwk=oargs.calculate_qwk)
+            if datasilo.regression:  # TODO: check if this is a mistake?
                 results = {**compute_metrics(label_ids=gold_labels, predictions=predictions, regression=False),
                            **results}
 

@@ -32,6 +32,10 @@ class OptimizationArguments:
         default=0.0,
         metadata={"help": "The value that the model needs to improve to satisfy early stopping conditions."}
     )
+    calculate_qwk: bool = field(
+        default=False,
+        metadata={"help": "whether to calculate quadratic weighted kappa, useful for ordinal classification problems."}
+    )
 
 
 def default_hp_space():
