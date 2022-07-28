@@ -76,6 +76,10 @@ def generate_readme(din: Union[str, PathLike], modelcard_base: Union[str, PathLi
         model_index = {
             "name": f"{args['model_name_or_path'].split('/')[-1]}-{args['dataset_name'].split('/')[-1]}",
             "results": [{
+                "task": {
+                    "type": modelcard["model-index"][0]["results"][0]["task"]["type"],
+                    "name": modelcard["model-index"][0]["results"][0]["task"]["name"],
+                },
                 "dataset": {
                     "type": args["dataset_name"],
                     "name": f"{args['dataset_name']} - {args['dataset_config']} - {args['dataset_revision']}",
