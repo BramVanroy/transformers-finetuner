@@ -37,6 +37,7 @@ setup(
         "GitPython",
         "matplotlib",
         "pandas",
+        "pyyaml",
         "ray[tune]",
         "seaborn",
         "scikit-learn",

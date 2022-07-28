@@ -1,0 +1,30 @@
+language:
+- nl
+license: mit
+tags:
+- sentiment-analysis
+- dutch
+- text
+datasets:
+- BramVanroy/hebban-reviews
+metrics:
+widget:
+- text: "Wauw, wat een leuk boek! Ik heb me er er goed mee vermaakt."
+- text: "Nee, deze vond ik niet goed. De auteur doet zijn best om je als lezer mee te trekken in het verhaal maar mij overtuigt het alleszins niet."
+- text: "Ik vind het niet slecht maar de schrijfstijl trekt me ook niet echt aan. Het wordt een beetje saai vanaf het vijfde hoofdstuk"
+model-index:
+- name:
+  results:
+  - task:
+      type: text-classification
+      name: sentiment analysis
+    dataset:
+      type:
+      name:
+      config:
+      split:
+      revision:
+    metrics:
+      - type:
+        value:
+        name:
