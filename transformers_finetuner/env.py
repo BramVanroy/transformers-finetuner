@@ -31,7 +31,7 @@ class Env:
                                                 for i in range(self.cuda_device_count)])
 
         try:
-            repo = git.Repo(path="../")
+            repo = git.Repo(path=str(Path(__file__).parent.parent.resolve()))
             self.finetuner_commit = repo.head.object.hexsha
         except InvalidGitRepositoryError:
             self.finetuner_commit = None
