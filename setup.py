@@ -41,7 +41,7 @@ setup(
         "seaborn",
         "scikit-learn",
         "torch",
-        "transformers"
+        "transformers>=4.21.0"
     ],
     entry_points={
         "console_scripts": ["finetune=transformers_finetuner.train:main"]
