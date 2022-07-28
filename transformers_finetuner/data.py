@@ -185,9 +185,6 @@ class DataSilo(DataTrainingArguments):
 
         self.num_labels = len(self.datasets["train"].unique(self.labelcolumn))
 
-        self.max_seq_length = min(self.max_seq_length, self.tokenizer.model_max_length) \
-            if self.max_seq_length else self.tokenizer.model_max_length
-
         self.fingerprint_base += f"{self.tokenizer.name_or_path.replace('/', '-')}+{self.max_seq_length}+{self.textcolumn}+"
         self._prepare_datasets()
         if self.is_world_process_zero:
