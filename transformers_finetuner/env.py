@@ -17,7 +17,7 @@ class Env:
     platform: str = pltfrm.platform()
     transformers_version: str = transformers.__version__
     python_version: str = pltfrm.python_version()
-    toch_version: str = torch.__version__
+    torch_version: str = torch.__version__
 
     cuda_device_count: int = cuda.device_count() if cuda.is_available() else 0
     cuda_devices: Optional[str] = None
