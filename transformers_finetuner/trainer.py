@@ -25,6 +25,7 @@ class WeightedTrainer(Trainer):
         """
         labels = inputs.pop("labels")
         outputs = model(**inputs)
+
         try:
             loss = self.loss_fct(outputs.logits.view(-1, model.num_labels), labels.view(-1))
         except AttributeError:  # DataParallel
